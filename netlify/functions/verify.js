@@ -1,6 +1,5 @@
 // netlify/functions/verify.js
 exports.handler = async function (event, context) {
-  // 允许跨域请求头设置，确保任何地方的网页都能正常调用
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -21,7 +20,6 @@ exports.handler = async function (event, context) {
     };
   }
 
-  // ⚡ 核心欺骗伪装：高等级 Windows Chrome 浏览器标识（Mojang 安全盾白名单）
   const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
   try {
@@ -45,7 +43,7 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "微软兑换 Token 失败", details: errData })
+        body: JSON.stringify({ success: false, message: "步骤 1：微软兑换 Token 失败", details: errData })
       };
     }
     const tokenData = await tokenRes.json();
@@ -71,15 +69,15 @@ exports.handler = async function (event, context) {
     });
 
     if (!xblRes.ok) {
+      const errData = await xblRes.text();
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "Xbox 鉴权失败，未注册 Xbox 档案！" })
+        body: JSON.stringify({ success: false, message: "步骤 2：Xbox 鉴权失败，未注册 Xbox 档案！", details: errData })
       };
     }
     const xblData = await xblRes.json();
     const xblToken = xblData.Token;
-    const userHash = xblData.DisplayClaims.xui[0].uhs;
 
     // 3. 换取 XSTS 安全凭证
     const xstsRes = await fetch("https://xsts.auth.xboxlive.com/xsts/authorize", {
@@ -100,16 +98,19 @@ exports.handler = async function (event, context) {
     });
 
     if (!xstsRes.ok) {
+      const errData = await xstsRes.text();
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "微软防沉迷家长策略拦截或账号地区限制，XSTS 授权失败。" })
+        body: JSON.stringify({ success: false, message: "步骤 3：XSTS 授权失败（可能被微软家长控制拦截）", details: errData })
       };
     }
     const xstsData = await xstsRes.json();
     const xstsToken = xstsData.Token;
+    // ⚡ 修正：从 XSTS 响应中提取与 Token 完全配对的 uhs 用户哈希
+    const userHash = xstsData.DisplayClaims.xui[0].uhs;
 
-    // 4. 用 XSTS 令牌登录 Minecraft 官方服务 (注入 UA 欺骗 Mojang 防火墙)
+    // 4. 用 XSTS 令牌登录 Minecraft 官方服务
     const mcLoginRes = await fetch("https://api.minecraftservices.com/authentication/login_with_xbox", {
       method: "POST",
       headers: { 
@@ -127,13 +128,13 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "登录 Minecraft 官方服务失败", details: errData })
+        body: JSON.stringify({ success: false, message: "步骤 4：登录 Minecraft 官方服务失败", details: errData })
       };
     }
     const mcLoginData = await mcLoginRes.json();
     const mcToken = mcLoginData.access_token;
 
-    // 5. 获取正版 Profile (注入 UA 欺骗 Mojang 防火墙)
+    // 5. 获取正版 Profile
     const profileRes = await fetch("https://api.minecraftservices.com/minecraft/profile", {
       method: "GET",
       headers: { 
@@ -146,19 +147,19 @@ exports.handler = async function (event, context) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ success: false, message: "此微软账号未购买官方正版 Minecraft！" })
+        body: JSON.stringify({ success: false, message: "步骤 5：此微软账号未购买官方正版 Minecraft！" })
       };
     }
     if (!profileRes.ok) {
+      const errData = await profileRes.text();
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "无法从 Mojang 获取正版 ID 档案" })
+        body: JSON.stringify({ success: false, message: "步骤 5：无法从 Mojang 获取正版 ID 档案", details: errData })
       };
     }
     const mcProfile = await profileRes.json();
 
-    // 6. 成功返回正版玩家名与 UUID
     return {
       statusCode: 200,
       headers,
@@ -173,7 +174,7 @@ exports.handler = async function (event, context) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, message: error.message })
+      body: JSON.stringify({ success: false, message: "云函数发生运行异常", details: error.message })
     };
   }
 };
