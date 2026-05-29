@@ -21,11 +21,17 @@ exports.handler = async function (event, context) {
     };
   }
 
+  // ⚡ 核心欺骗伪装：高等级 Windows Chrome 浏览器标识（Mojang 安全盾白名单）
+  const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
   try {
-    // 1. 兑换微软官方 access_token (直连微软，无跨域限制)
+    // 1. 兑换微软官方 access_token
     const tokenRes = await fetch("https://login.live.com/oauth20_token.srf", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: { 
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": userAgent
+      },
       body: new URLSearchParams({
         client_id: "00000000402B5328",
         code: code,
@@ -50,7 +56,8 @@ exports.handler = async function (event, context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "User-Agent": userAgent
       },
       body: JSON.stringify({
         Properties: {
@@ -79,7 +86,8 @@ exports.handler = async function (event, context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "User-Agent": userAgent
       },
       body: JSON.stringify({
         Properties: {
@@ -101,29 +109,37 @@ exports.handler = async function (event, context) {
     const xstsData = await xstsRes.json();
     const xstsToken = xstsData.Token;
 
-    // 4. 用 XSTS 令牌登录 Minecraft 官方服务
+    // 4. 用 XSTS 令牌登录 Minecraft 官方服务 (注入 UA 欺骗 Mojang 防火墙)
     const mcLoginRes = await fetch("https://api.minecraftservices.com/authentication/login_with_xbox", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": userAgent
+      },
       body: JSON.stringify({
         identityToken: `XSTS=uhs:${userHash};${xstsToken}`
       })
     });
 
     if (!mcLoginRes.ok) {
+      const errData = await mcLoginRes.text();
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ success: false, message: "登录 Minecraft 官方服务失败" })
+        body: JSON.stringify({ success: false, message: "登录 Minecraft 官方服务失败", details: errData })
       };
     }
     const mcLoginData = await mcLoginRes.json();
     const mcToken = mcLoginData.access_token;
 
-    // 5. 获取正版 Profile
+    // 5. 获取正版 Profile (注入 UA 欺骗 Mojang 防火墙)
     const profileRes = await fetch("https://api.minecraftservices.com/minecraft/profile", {
       method: "GET",
-      headers: { "Authorization": `Bearer ${mcToken}` }
+      headers: { 
+        "Authorization": `Bearer ${mcToken}`,
+        "User-Agent": userAgent
+      }
     });
 
     if (profileRes.status === 404) {
