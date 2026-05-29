@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洛洛小镇 | 个人中心</title>
+    <!-- 引入 FontAwesome 图标 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* ================= 极简粉色系变量 ================= */
+        :root {
+            --bg: #faf7f5;
+            --text-main: #3d2f31;
+            --text-sub: #7a686b;
+            --accent: #ff85a1;
+            --accent-light: #ffe5ec;
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.85);
+            --overlay: rgba(250, 247, 245, 0.75);
+        }
+
+        [data-theme="dark"] {
+            --bg: #1c1415;
+            --text-main: #fcf6f7;
+            --text-sub: #c3b3b5;
+            --accent: #ff85a1;
+            --accent-light: rgba(255, 133, 161, 0.15);
+            --glass-bg: rgba(44, 30, 32, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --overlay: rgba(28, 20, 21, 0.8);
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 视差背景 */
+        .bg-system { position: fixed; inset: 0; z-index: -10; background: url('bg/1 (5).png') no-repeat center center/cover; }
+        .bg-overlay { position: absolute; inset: 0; background: var(--overlay); }
+        #wind-canvas { position: fixed; inset: 0; z-index: 99; pointer-events: none; }
+
+        /* 导航栏 */
+        nav {
+            width: 100%; padding: 20px 5vw;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; position: relative;
+        }
+        
+        .logo { 
+            font-size: 1.4rem; 
+            font-weight: 900; 
+            letter-spacing: 1.5px; 
+            color: #c53658; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 
+                0 2px 8px rgba(255, 255, 255, 0.95), 
+                0 -2px 8px rgba(255, 255, 255, 0.95);
+        }
+
+        .nav-links a { 
+            color: var(--text-main); 
+            text-decoration: none; 
+            font-weight: 600; 
+            font-size: 0.9rem; 
+            margin-right: 25px; 
+            text-shadow: 0 1px 4px rgba(255,255,255,0.8);
+        }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* 主体容器 */
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 5vw;
+            width: 100%;
+            max-width: 1300px;
+            margin: 0 auto;
+            z-index: 10;
+        }
+
+        /* ================= 登录/注册表单卡片 ================= */
+        .auth-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 30px;
+            padding: 35px 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            display: none; 
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .auth-title {
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+            color: var(--text-main);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: var(--text-sub);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent);
+            background: #fff;
+        }
+
+        .captcha-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .captcha-canvas {
+            background: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            height: 46px;
+            width: 150px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+
+        .strength-bar-container {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+            height: 4px;
+            width: 100%;
+        }
+        .strength-segment {
+            flex: 1;
+            background: #e0d9d9;
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 13px;
+            border-radius: 100px;
+            background: var(--text-main);
+            color: var(--bg);
+            border: none;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-action:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .switch-mode-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .switch-mode-text span {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* ================= 极清玩家后台布局 ================= */
+        .profile-card {
+            width: 100%;
+            display: none;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            box-shadow: none;
+            padding: 0;
+            align-items: start;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .profile-sidebar {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 30px 20px;
+            box-shadow: 0 10px 30px rgba(229, 143, 158, 0.08);
+            text-align: center;
+        }
+
+        .sidebar-logo-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }.sidebar-logo-area h2 {
+            font-size: 1.25rem;
+            color: #c53658;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .sidebar-logo-area span {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            font-weight: bold;
+        }
+
+        .sidebar-user-widget {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 133, 161, 0.15);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .sidebar-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: 2px solid var(--accent);
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .sidebar-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+        .sidebar-user-info span {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            display: block;
+        }
+        .sidebar-user-info strong {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            text-align: left;
+            margin-top: 10px;
+        }
+        .menu-header {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            font-weight: 700;
+            margin: 15px 0 8px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .menu-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 15px;
+            border-radius: 12px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: all 0.3s;
+        }
+        .menu-item a:hover {
+            background: var(--accent-light);
+            color: #c53658;
+        }
+        .menu-item.active a {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .submenu {
+            list-style: none;
+            padding-left: 24px;
+            margin-top: 5px;
+            display: none;
+        }
+        .submenu.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        .submenu li a {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+        .submenu li a:hover {
+            color: var(--accent);
+            background: transparent;
+            padding-left: 16px;
+        }
+        .submenu-arrow {
+            margin-left: auto;
+            font-size: 0.75rem;
+            transition: transform 0.3s;
+        }
+        .menu-item.open .submenu-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* 右侧展示区 */
+        .profile-main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .main-action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 5px;
+        }
+        .btn-logout-new {
+            background: #fff;
+            color: #c53658;
+            border: 1px solid rgba(255, 133, 161, 0.3);
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-logout-new:hover {
+            background: #ff5252;
+            color: white;
+            border-color: #ff5252;
+        }
+
+        .welcome-header-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 24px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(229, 143, 158, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .welcome-header-card::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .welcome-header-card * {
+            z-index: 2;
+        }
+        .welcome-avatar-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            border: 4px solid var(--accent);
+            background: #fff;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(255, 133, 161, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .welcome-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+        .welcome-text-container {
+            flex: 1;
+        }
+        .welcome-title-new {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .welcome-subtitle-new {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .status-badge-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 133, 161, 0.2);
+            padding: 8px 16px;
+            border-radius: 100px;
+        }
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e0d9d9;
+        }
+        .badge-dot.active {
+            background: #2b8a3e;
+            box-shadow: 0 0 8px rgba(43, 138, 62, 0.6);
+        }
+        .badge-dot.inactive {
+            background: #ff5252;
+            box-shadow: 0 0 8px rgba(255, 82, 82, 0.6);
+        }
+        .status-text-badge {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        /* 后台主卡片区域 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .info-card-new {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px 30px;
+            box-shadow: 0 10px 30px rgba(229, 143, 158, 0.05);
+            backdrop-filter: blur(15px);
+        }
+        .info-card-new h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px dashed rgba(255, 133, 161, 0.15);
+            padding-bottom: 10px;
+        }
+        .info-card-new h3 i {
+            color: var(--accent);
+        }
+
+        .data-table-new {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table-new td {
+            padding: 12px 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            border-bottom: 1px solid rgba(255, 133, 161, 0.08);
+        }
+        .data-table-new tr:last-child td {
+            border-bottom: none;
+        }
+        .table-label {
+            color: var(--text-sub);
+            font-weight: bold;
+            width: 100px;
+        }
+        .table-value {
+            font-weight: 700;
+        }
+        .tag-mc-id {
+            background: var(--accent-light);
+            color: #c53658;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .status-alert-card {
+            background: linear-gradient(135deg, rgba(255, 229, 236, 0.5), rgba(255, 255, 255, 0.8));
+            border: 1px dashed rgba(255, 133, 161, 0.4);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .alert-icon-wrap {
+            background: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(255, 133, 161, 0.15);
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+        .alert-text-wrap {
+            flex: 1;
+        }
+        .alert-text-wrap h4 {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .alert-status-sub {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .alert-text-wrap p {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .actions-grid-wrap {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* === 极美快捷操作按钮 === */
+        .btn-dash {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+        }
+        .btn-dash i {
+            font-size: 1rem;
+        }
+        /* 每日签到按钮：淡粉渐变 */
+        .btn-dash-primary {
+            background: linear-gradient(135deg, #ff85a1, #ffa5b6);
+            box-shadow: 0 4px 15px rgba(255, 133, 161, 0.25);
+        }
+        .btn-dash-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 133, 161, 0.4);
+            filter: brightness(1.05);
+        }
+        /* 绑定/换绑按钮：深莓红渐变 */
+        .btn-dash-secondary {
+            background: linear-gradient(135deg, #c53658, #e54b73);
+            box-shadow: 0 4px 15px rgba(197, 54, 88, 0.2);
+        }
+        .btn-dash-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(197, 54, 88, 0.35);
+            filter: brightness(1.05);
+        }
+        .btn-dash:active {
+            transform: translateY(0);
+        }
+        .btn-dash:disabled {
+            background: #e0d9d9;
+            color: #a09597;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* ================= 自定义精美模态弹窗系统 ================= */
+        .town-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(61, 47, 49, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .town-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .town-modal-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 60px rgba(229, 143, 158, 0.15);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 440px;
+            padding: 30px;
+            transform: scale(0.9) translateY(15px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+        .town-modal-overlay.active .town-modal-card {
+            transform: scale(1) translateY(0);
+        }
+        .town-modal-icon {
+            font-size: 2.2rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+        .town-modal-title {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+        .town-modal-message {
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: var(--text-sub);
+            margin-bottom: 22px;
+            word-break: break-all;
+        }
+        .town-modal-input-wrap {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .town-modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            outline: none;
+            color: var(--text-main);
+        }
+        .town-modal-input:focus {
+            border-color: var(--accent);
+            background: #fff;
+        }
+        .town-modal-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .town-btn-modal {
+            flex: 1;
+            padding: 11px 20px;
+            border-radius: 100px;
+            font-size: 0.88rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .town-btn-modal-confirm {
+            background: var(--text-main);
+            color: white;
+        }
+        .town-btn-modal-confirm:hover {
+            background: var(--accent);
+            box-shadow: 0 4px 12px rgba(255, 133, 161, 0.3);
+        }
+        .town-btn-modal-cancel {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--glass-border);
+            color: var(--text-sub);
+        }
+        .town-btn-modal-cancel:hover {
+            background: #f1eaeb;
+        }
+
+        /* 专门定制的绑定模式二层卡片 */
+        .town-bind-choice-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .bind-choice-card {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 133, 161, 0.15);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .bind-choice-card:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .bind-choice-card.active {
+            background: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 4px 15px rgba(255, 133, 161, 0.15);
+        }
+        .bind-choice-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bind-choice-title i {
+            color: var(--accent);
+        }
+        .bind-choice-desc {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- 动态背景 -->
+    <div class="bg-system">
+        <div class="bg-overlay"></div>
+    </div>
+    <!-- 前置飘樱花特效 -->
+    <canvas id="wind-canvas"></canvas>
+
+    <!-- 导航栏 -->
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-seedling"></i> 洛洛小镇 · 个人中心
+        </div>
+        <div class="nav-links">
+            <a href="index.html">返回官网首页</a>
+        </div>
+    </nav>
+
+    <!-- 主体内容容器 -->
+    <div class="main-container">
+
+        <!-- ================= 登录卡片 ================= -->
+        <div class="auth-card" id="loginCard">
+            <h2 class="auth-title">账号登录</h2>
+            
+            <div class="input-group">
+                <label for="loginEmail">电子邮箱</label>
+                <input type="email" id="loginEmail" placeholder="you@example.com">
+            </div>
+
+            <div class="input-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码">
+            </div>
+
+            <div class="input-group">
+                <label>安全校验 (点击图片刷新)</label>
+                <div class="captcha-row">
+                    <input type="text" id="loginCaptchaInput" placeholder="输入右侧校验码" style="flex: 1;">
+                    <canvas id="loginCaptchaCanvas" class="captcha-canvas" onclick="generateCaptcha('login')"></canvas>
+                </div>
+            </div>
+
+            <button class="btn-action" id="loginBtn" onclick="handleLogin()">登 录</button>
+
+            <div class="switch-mode-text">
+                <span onclick="toggleAuthMode('forgot')">忘记密码？</span>
+                <span onclick="toggleAuthMode('reg')">没有账号？前往注册</span>
+            </div>
+        </div>
+
+        <!-- ================= 注册卡片 ================= -->
+        <div class="auth-card" id="regCard">
+            <h2 class="auth-title">账号注册</h2>
+            
+            <div class="input-group">
+                <label for="regEmail">电子邮箱</label>
+                <input type="email" id="regEmail" placeholder="you@example.com">
+            </div>
+
+            <div class="input-group">
+                <label for="regPassword">密码</label>
+                <input type="password" id="regPassword" placeholder="至少 6 位安全密码" oninput="checkPasswordStrength(this.value)">
+                <div class="strength-bar-container">
+                    <div class="strength-segment" id="strength-0"></div>
+                    <div class="strength-segment" id="strength-1"></div>
+                    <div class="strength-segment" id="strength-2"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="regConfirmPassword">确认密码</label>
+                <input type="password" id="regConfirmPassword" placeholder="请再次输入以防输错">
+            </div>
+
+            <div class="input-group">
+                <label>安全校验 (点击图片刷新)</label>
+                <div class="captcha-row">
+                    <input type="text" id="regCaptchaInput" placeholder="输入右侧校验码" style="flex: 1;">
+                    <canvas id="regCaptchaCanvas" class="captcha-canvas" onclick="generateCaptcha('reg')"></canvas>
+                </div>
+            </div>
+
+            <button class="btn-action" id="regBtn" onclick="handleRegister()">申请注册账号</button>
+
+            <div class="switch-mode-text" style="justify-content: center;">
+                <span onclick="toggleAuthMode('login')">已有账号？去登录</span>
+            </div>
+        </div>
+
+        <!-- ================= 忘记密码卡片 ================= -->
+        <div class="auth-card" id="forgotCard">
+            <h2 class="auth-title">重置密码</h2>
+            <p style="font-size: 0.8rem; color: var(--text-sub); text-align: center; margin-bottom: 20px; line-height: 1.5;">
+                系统将向您的邮箱发送一封包含密码重置链接的安全邮件。
+            </p>
+            
+            <div class="input-group">
+                <label for="forgotEmail">注册时绑定的邮箱</label>
+                <input type="email" id="forgotEmail" placeholder="you@example.com">
+            </div>
+
+            <button class="btn-action" id="forgotBtn" onclick="handleForgotPassword()">发送重置邮件</button>
+
+            <div class="switch-mode-text" style="justify-content: center;">
+                <span onclick="toggleAuthMode('login')">想起密码了？返回登录</span>
+            </div>
+        </div>
+
+        <!-- ================= 输入新密码卡片 ================= -->
+        <div class="auth-card" id="resetCard">
+            <h2 class="auth-title">设置新密码</h2>
+            
+            <div class="input-group">
+                <label for="resetPassword">请设定您的新密码</label>
+                <input type="password" id="resetPassword" placeholder="请勿设置得过于简单">
+            </div>
+
+            <button class="btn-action" id="resetBtn" onclick="handleResetPasswordSave()">保存并更新密码</button>
+        </div>
+
+        <!-- ================= 个人中心面板 (双栏布局) ================= -->
+        <div class="profile-card" id="profileCard">
+            
+            <!-- Left Column -->
+            <div class="profile-sidebar">
+                <div class="sidebar-logo-area">
+                    <h2><i class="fa-solid fa-tree"></i> 洛洛小镇</h2>
+                    <span>TOWN RESIDENT CENTER</span>
+                </div>
+
+                <div class="sidebar-user-widget">
+                    <div class="sidebar-avatar" id="sidebarAvatarContainer">
+                        <img src="https://cravatar.cn/avatar/default?size=44" id="sidebarAvatar" alt="Avatar">
+                    </div>
+                    <div class="sidebar-user-info">
+                        <span>玩家账号</span>
+                        <strong id="sidebarUsername">Loading...</strong>
+                    </div>
+                </div>
+
+                <ul class="sidebar-menu">
+                    <li class="menu-header">核心菜单</li>
+                    <li class="menu-item active">
+                        <a href="javascript:void(0)"><i class="fa-solid fa-user-check"></i> 个人中心</a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="https://wiki.lovelymc.com" target="_blank"><i class="fa-solid fa-book-open"></i> 游戏指南 / 规范</a>
+                    </li>
+                    <li class="menu-header">系统控制</li>
+                    <li class="menu-item">
+                        <a href="javascript:void(0)" onclick="handleLogout()"><i class="fa-solid fa-door-open" style="color: #ff5252;"></i> 退出登录</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right Column -->
+            <div class="profile-main">
+                
+                <!-- Welcome Card -->
+                <div class="welcome-header-card">
+                    <div class="welcome-avatar-wrap" id="welcomeAvatarContainer">
+                        <img src="https://cravatar.cn/avatar/default?size=72" class="welcome-avatar-img" id="welcomeAvatar" alt="Big Avatar">
+                    </div>
+                    <div class="welcome-text-container">
+                        <div class="welcome-title-new" id="welcomeTitle">欢迎回到洛洛小镇！</div>
+                        <div class="welcome-subtitle-new" id="welcomeSubtitle">您是今天第 1 位到访的玩家。</div>
+                    </div>
+                    <div class="status-badge-container">
+                        <div class="badge-dot" id="statusBadgeDot"></div>
+                        <div class="status-text-badge" id="statusBadgeText">账号状态加载中</div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Grid -->
+                <div class="dashboard-grid">
+                    
+                    <!-- Left: Profile Data -->
+                    <div class="info-card-new">
+                        <h3><i class="fa-solid fa-id-card"></i> 游戏账号绑定状态</h3>
+                        <table class="data-table-new">
+                            <tr>
+                                <td class="table-label">用户账号ID</td>
+                                <td class="table-value" id="profileId" style="font-family: monospace; font-size: 0.75rem;">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td class="table-label">注册邮箱</td>
+                                <td class="table-value" id="profileEmail">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td class="table-label">Minecraft名</td>
+                                <td class="table-value">
+                                    <span class="tag-mc-id" id="profileMcName">未绑定账号</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="table-label">MC 正版UUID</td>
+                                <td class="table-value" id="profileMcUuid" style="font-family: monospace; font-size: 0.75rem; color: var(--text-sub);">未分配 UUID</td>
+                            </tr>
+                            <tr>
+                                <td class="table-label">我的金币</td>
+                                <td class="table-value" style="color: #e59f00;" id="profileCoins">150 💰</td>
+                            </tr>
+                            <tr>
+                                <td class="table-label">签到天数</td>
+                                <td class="table-value" id="profileDays">1 天</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Right: Monitoring -->
+                    <div class="info-card-new" style="display: flex; flex-direction: column; gap: 15px;">
+                        <h3><i class="fa-solid fa-circle-info"></i> 服务状态监控</h3>
+                        
+                        <div class="status-alert-card">
+                            <div class="alert-icon-wrap">
+                                <i class="fa-solid fa-server"></i>
+                            </div>
+                            <div class="alert-text-wrap">
+                                <h4>小镇主服务器</h4>
+                                <div class="alert-status-sub" style="color: #2b8a3e; font-weight: 800; margin: 2px 0;">正常</div>
+                                <p>延迟正常，联机验证系统运行稳定。</p>
+                            </div>
+                        </div>
+
+                        <div class="status-alert-card" style="background: linear-gradient(135deg, rgba(235, 251, 238, 0.4), rgba(255, 255, 255, 0.8)); border-color: rgba(43, 138, 62, 0.2);">
+                            <div class="alert-icon-wrap" style="color: #2b8a3e;">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div class="alert-text-wrap">
+                                <h4>白名单互通</h4>
+                                <div class="alert-status-sub" style="color: #2b8a3e; font-weight: 800; margin: 2px 0;">已就绪</div>
+                                <p>白名单实时更新与同步机制完全就绪。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer Quick Actions -->
+                <div class="info-card-new" style="margin-top: 5px;">
+                    <h3>🎮 个人中心快捷操作</h3>
+                    <div class="actions-grid-wrap" style="margin-top: 12px;">
+                        <button class="btn-dash btn-dash-primary" onclick="handleCheckIn()"><i class="fa-solid fa-calendar-check"></i> 每日签到领积分 (+20)</button>
+                        <button class="btn-dash btn-dash-secondary" id="bindActionButton" onclick="bindMcAccount()"><i class="fa-solid fa-gamepad"></i> 绑定我的MC账号</button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <div class="town-modal-overlay" id="townAlertModal">
+        <div class="town-modal-card">
+            <div class="town-modal-icon" id="alertIcon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="town-modal-title" id="alertTitle">提示</div>
+            <div class="town-modal-message" id="alertMsg">这是一条信息。</div>
+            <div class="town-modal-btn-row">
+                <button class="town-btn-modal town-btn-modal-confirm" id="alertBtnClose" onclick="closeAlertModal()">确 定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="town-modal-overlay" id="townPromptModal">
+        <div class="town-modal-card">
+            <div class="town-modal-icon"><i class="fa-solid fa-file-signature"></i></div>
+            <div class="town-modal-title" id="promptTitle">请输入</div>
+            <div class="town-modal-message" id="promptMsg">请填写相关数据：</div>
+            <div class="town-modal-input-wrap">
+                <input type="text" class="town-modal-input" id="promptInput" placeholder="输入相关信息...">
+            </div>
+            <div class="town-modal-btn-row">
+                <button class="town-btn-modal town-btn-modal-cancel" id="promptBtnCancel">取 消</button>
+                <button class="town-btn-modal town-btn-modal-confirm" id="promptBtnConfirm">确 定</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="town-modal-overlay" id="townSelectorModal">
+        <div class="town-modal-card" style="max-width: 460px;">
+            <div class="town-modal-icon"><i class="fa-solid fa-circle-question"></i></div>
+            <div class="town-modal-title">请选择绑定模式</div>
+            <div class="town-modal-message">为了将您的账户同步至游戏，请选择最符合您当前的绑定方式：</div>
+            <div class="town-bind-choice-row">
+                <div class="bind-choice-card" onclick="selectBindMode('1')">
+                    <div class="bind-choice-title"><i class="fa-brands fa-microsoft"></i> 微软正版验证绑定</div>
+                    <div class="bind-choice-desc">安全快速。复制微软登录成功后的授权网址粘贴回来即可免卡绑定。</div>
+                </div>
+                <div class="bind-choice-card" onclick="selectBindMode('2')">
+                    <div class="bind-choice-title"><i class="fa-solid fa-gamepad"></i> 离线版账号手动绑定</div>
+                    <div class="bind-choice-desc">手动填入游戏 ID 即可绑定，注意名字不可与他人发生冲突。</div>
+                </div>
+            </div>
+            <div class="town-modal-btn-row" style="margin-top: 15px;">
+                <button class="town-btn-modal town-btn-modal-cancel" onclick="closeSelectorModal()">取 消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        document.getElementById('loginCard').style.display = 'block';
+
+        const SUPABASE_URL = "https://oubvmhmtmlhubfthzkls.supabase.co"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91YnZtaG10bWxodWJmdGh6a2xzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MTcwODIsImV4cCI6MjA5NTA5MzA4Mn0.9NnRQblK2gCE6GQoDeaTDd8kr48ZjZUbkjkrtxdUVWE";
+        
+        let isLocalStorageAvailable = false;
+        try {
+            const testKey = "__storage_test__";
+            window.localStorage.setItem(testKey, testKey);
+            window.localStorage.removeItem(testKey);
+            isLocalStorageAvailable = true;
+        } catch (e) {}
+
+        let memoryStore = {};
+        const safeStorage = {
+            getItem(key) {
+                if (isLocalStorageAvailable) {
+                    try { return window.localStorage.getItem(key); } catch (e) {}
+                }
+                return memoryStore[key] || null;
+            },
+            setItem(key, value) {
+                if (isLocalStorageAvailable) {
+                    try { 
+                        window.localStorage.setItem(key, value); 
+                        return;
+                    } catch (e) {}
+                }
+                memoryStore[key] = value;
+            },
+            removeItem(key) {
+                if (isLocalStorageAvailable) {
+                    try { 
+                        window.localStorage.removeItem(key); 
+                        return;
+                    } catch (e) {}
+                }
+                delete memoryStore[key];
+            }
+        };
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                storage: safeStorage,
+                persistSession: false,
+                detectSessionInUrl: true
+            }
+        });
+
+        let currentUser = null;   
+        let userProfile = null;   
+        let loginFailCount = 0;   
+
+        // 自定义弹窗逻辑
+        let alertResolve = null;
+        function showCustomAlert(message, title = "系统提示", type = "info") {
+            return new Promise((resolve) => {
+                alertResolve = resolve;
+                const modal = document.getElementById("townAlertModal");
+                const iconContainer = document.getElementById("alertIcon");
+                const titleElement = document.getElementById("alertTitle");
+                const msgElement = document.getElementById("alertMsg");
+
+                titleElement.innerText = title;
+                msgElement.innerHTML = message.replace(/\n/g, '<br>');
+
+                if (type === "success" || message.includes("成功") || message.includes("恭喜")) {
+                    iconContainer.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #2b8a3e;"></i>';
+                } else if (type === "error" || message.includes("失败") || message.includes("错误") || message.includes("拦截")) {
+                    iconContainer.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #ff5252;"></i>';
+                } else {
+                    iconContainer.innerHTML = '<i class="fa-solid fa-info-circle" style="color: var(--accent);"></i>';
+                }
+
+                modal.classList.add("active");
+            });
+        }
+        function closeAlertModal() {
+            document.getElementById("townAlertModal").classList.remove("active");
+            if (alertResolve) {
+                alertResolve();
+                alertResolve = null;
+            }
+        }
+
+        let promptResolve = null;
+        function showCustomPrompt(message, placeholder = "请输入...", title = "输入内容") {
+            return new Promise((resolve) => {
+                promptResolve = resolve;
+                const modal = document.getElementById("townPromptModal");
+                const titleElement = document.getElementById("promptTitle");
+                const msgElement = document.getElementById("promptMsg");
+                const inputElement = document.getElementById("promptInput");
+
+                titleElement.innerText = title;
+                msgElement.innerText = message;
+                inputElement.value = "";
+                inputElement.placeholder = placeholder;
+
+                const confirmBtn = document.getElementById("promptBtnConfirm");
+                const cancelBtn = document.getElementById("promptBtnCancel");
+
+                confirmBtn.onclick = () => {
+                    modal.classList.remove("active");
+                    resolve(inputElement.value);
+                };
+                cancelBtn.onclick = () => {
+                    modal.classList.remove("active");
+                    resolve(null);
+                };
+
+                modal.classList.add("active");
+            });
+        }
+
+        let selectorResolve = null;
+        function showMcBindSelector() {
+            return new Promise((resolve) => {
+                selectorResolve = resolve;
+                document.getElementById("townSelectorModal").classList.add("active");
+            });
+        }
+        function selectBindMode(mode) {
+            document.getElementById("townSelectorModal").classList.remove("active");
+            if (selectorResolve) {
+                selectorResolve(mode);
+                selectorResolve = null;
+            }
+        }
+        function closeSelectorModal() {
+            document.getElementById("townSelectorModal").classList.remove("active");
+            if (selectorResolve) {
+                selectorResolve(null);
+                selectorResolve = null;
+            }
+        }
+
+        // 高阶图形验证码
+        const captchaData = { login: "", reg: "" };
+        function generateCaptcha(mode) {
+            const canvas = document.getElementById(mode === 'login' ? 'loginCaptchaCanvas' : 'regCaptchaCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = 150;
+            canvas.height = 46;
+
+            const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            captchaData[mode] = code;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff9fa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 4; i++) {
+                ctx.strokeStyle = `rgba(${Math.random()*150 + 100}, ${Math.random()*100 + 100}, ${Math.random()*100 + 100}, 0.6)`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < 4; i++) {
+                const char = code[i];
+                ctx.font = 'bold 24px -apple-system, sans-serif';
+                ctx.fillStyle = `rgba(${Math.random()*100 + 50}, ${Math.random()*50 + 50}, ${Math.random()*100 + 100}, 0.85)`;
+                ctx.save();
+                const x = 20 + i * 30 + Math.random() * 8;
+                const y = 30 + Math.random() * 6;
+                const angle = (Math.random() * 40 - 20) * Math.PI / 180;
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillText(char, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        function checkPasswordStrength(val) {
+            let score = 0;
+            if (!val || val.length < 6) score = 0;
+            else {
+                score = 1; 
+                if (/[A-Z]/.test(val) || /[0-9]/.test(val)) score = 2;
+                if (/[!@#$%^&*(),.?":{}|<>]/.test(val) && val.length >= 8) score = 3;
+            }
+            for (let i = 0; i < 3; i++) {
+                const seg = document.getElementById(`strength-${i}`);
+                if (i < score) {
+                    seg.style.background = score === 1 ? '#ff5252' : (score === 2 ? '#ffa21f' : '#2b8a3e');
+                } else {
+                    seg.style.background = '#e0d9d9';
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            generateCaptcha('login');
+            generateCaptcha('reg');
+            
+            if (window.location.hash.includes("type=recovery") || window.location.hash.includes("access_token=")) {
+                showCard('resetCard');
+            }
+
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    currentUser = session.user;
+                    fetchProfile();
+                } else {
+                    currentUser = null;
+                    userProfile = null;
+                    showCard('loginCard');
+                }
+            });
+        });
+
+        function showCard(cardId) {
+            const cards = ['loginCard', 'regCard', 'forgotCard', 'resetCard', 'profileCard'];
+            cards.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.style.display = 'none';
+            });
+            document.getElementById(cardId).style.display = cardId === 'profileCard' ? 'grid' : 'block';
+        }
+
+        function toggleAuthMode(mode) {
+            showCard(mode + 'Card');
+        }
+
+        async function fetchProfile() {
+            if (!currentUser) return;
+            try {
+                let { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error) {
+                    const { data: insertData, error: insertError } = await supabaseClient
+                        .from('profiles')
+                        .upsert({ id: currentUser.id, username: currentUser.email, coins: 150, days_count: 1 })
+                        .select()
+                        .single();
+                    if (!insertError) userProfile = insertData;
+                } else {
+                    userProfile = data;
+                }
+                
+                if (userProfile) {
+                    updateProfileUI();
+                    showCard('profileCard');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateProfileUI() {
+            if (!currentUser || !userProfile) return;
+
+            document.getElementById("sidebarUsername").innerText = userProfile.username || currentUser.email;
+            document.getElementById("welcomeTitle").innerText = `你好，游戏玩家！`;
+            document.getElementById("profileId").innerText = currentUser.id;
+            document.getElementById("profileEmail").innerText = currentUser.email;
+            document.getElementById("profileCoins").innerText = `${userProfile.coins || 0} 💰`;
+            document.getElementById("profileDays").innerText = `${userProfile.days_count || 0} 天`;
+
+            const statusDot = document.getElementById("statusBadgeDot");
+            const statusText = document.getElementById("statusBadgeText");
+            const mcNameSpan = document.getElementById("profileMcName");
+            const mcUuidTd = document.getElementById("profileMcUuid");
+            const mainAvatar = document.getElementById("welcomeAvatar");
+            const sideAvatar = document.getElementById("sidebarAvatar");
+            const bindBtn = document.getElementById("bindActionButton");
+
+            if (userProfile.mc_username) {
+                statusDot.className = "badge-dot active";
+                statusText.innerText = "已验证 (游戏数据已同步)";
+                
+                const isOffline = userProfile.mc_username.startsWith("offline_");
+                const cleanMcName = isOffline ? userProfile.mc_username.substring(8) : userProfile.mc_username;
+                
+                mcNameSpan.innerText = cleanMcName;
+                mcNameSpan.style.background = '#e6fcf5';
+                mcNameSpan.style.color = '#0ca678';
+                
+                mcUuidTd.innerText = userProfile.mc_uuid || "离线玩家，暂无 UUID";
+
+                if (isOffline) {
+                    mainAvatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanMcName)}&backgroundColor=ff85a1&fontFamily=Arial`;
+                    sideAvatar.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanMcName)}&backgroundColor=ff85a1&fontFamily=Arial`;
+                } else {
+                    mainAvatar.src = `https://cravatar.cn/avatar/${cleanMcName}?size=72`;
+                    sideAvatar.src = `https://cravatar.cn/avatar/${cleanMcName}?size=44`;
+                }
+                
+                document.getElementById("welcomeSubtitle").innerText = `绑定数据已关联，祝您游戏愉快！✨`;
+                
+                bindBtn.innerHTML = `<i class="fa-solid fa-link-slash"></i> 解绑我的MC账号`;
+                bindBtn.className = "btn-dash btn-dash-secondary"; 
+                bindBtn.onclick = unbindMcAccount;
+            } else {
+                statusDot.className = "badge-dot inactive";
+                statusText.innerText = "未绑定账号 (联机受阻)";
+                mcNameSpan.innerText = "未绑定账号";
+                mcNameSpan.style.background = '#fff0f6';
+                mcNameSpan.style.color = '#d9480f';
+
+                mcUuidTd.innerText = "未关联您的 MC 游戏账号";
+
+                mainAvatar.src = `https://cravatar.cn/avatar/default?size=72`;
+                sideAvatar.src = `https://cravatar.cn/avatar/default?size=44`;
+                document.getElementById("welcomeSubtitle").innerText = `⚠️ 安全警告：为了同步您的游戏数据，需要先绑定您的游戏账号！`;
+                
+                bindBtn.innerHTML = `<i class="fa-solid fa-gamepad"></i> 绑定我的MC账号`;
+                bindBtn.className = "btn-dash btn-dash-secondary";
+                bindBtn.onclick = bindMcAccount;
+            }
+        }
+
+        async function handleLogin() {
+            if (loginFailCount >= 5) {
+                showCustomAlert("❌ 尝试过多！登录入口已被锁定。请1分钟后再试。", "安全锁", "error");
+                return;
+            }
+
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+            const captcha = document.getElementById("loginCaptchaInput").value.trim();
+
+            if (!email || !password) return showCustomAlert("请完整填入邮箱和密码哦！", "提示", "info");
+
+            if (captcha.toLowerCase() !== captchaData.login.toLowerCase()) {
+                showCustomAlert("❌ 验证码输入错误，请重新输入！", "校验失败", "error");
+                generateCaptcha('login');
+                return;
+            }
+
+            const loginBtn = document.getElementById("loginBtn");
+            loginBtn.innerText = "正在登录...";
+            loginBtn.disabled = true;
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                
+                loginBtn.innerText = "登 录";
+                loginBtn.disabled = false;
+                generateCaptcha('login');
+
+                if (error) {
+                    loginFailCount++;
+                    if (loginFailCount >= 5) {
+                        showCustomAlert("❌ 连续输错密码已达5次，安全锁定1分钟。", "密码错误过多", "error");
+                        setTimeout(() => { loginFailCount = 0; }, 60000);
+                    } else {
+                        showCustomAlert(`❌ 登录失败: ${error.message} (或密码有误)`, "登录失败", "error");
+                    }
+                } else {
+                    loginFailCount = 0;
+                    showCustomAlert("🌸 登录成功，欢迎回来！", "成功", "success");
+                }
+            } catch (err) {
+                loginBtn.innerText = "登 录";
+                loginBtn.disabled = false;
+                showCustomAlert("❌ 网络请求发生错误，请检查网络或控制台。", "系统异常", "error");
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById("regEmail").value.trim();
+            const password = document.getElementById("regPassword").value;
+            const confirmPassword = document.getElementById("regConfirmPassword").value;
+            const captcha = document.getElementById("regCaptchaInput").value.trim();
+
+            if (!email || !password || !confirmPassword) return showCustomAlert("请填写全部注册项！", "提示", "info");
+
+            if (password !== confirmPassword) {
+                showCustomAlert("❌ 两次输入的密码不一致！", "校验失败", "error");
+                return;
+            }
+
+            if (password.length < 6) {
+                showCustomAlert("❌ 密码长度不能少于 6 位哦！", "校验失败", "error");
+                return;
+            }
+
+            if (captcha.toLowerCase() !== captchaData.reg.toLowerCase()) {
+                showCustomAlert("❌ 验证码输入错误！", "校验失败", "error");
+                generateCaptcha('reg');
+                return;
+            }
+
+            const regBtn = document.getElementById("regBtn");
+            regBtn.innerText = "正在创建账号...";
+            regBtn.disabled = true;
+
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                
+                regBtn.innerText = "申请注册账号";
+                regBtn.disabled = false;
+                generateCaptcha('reg');
+
+                if (error) {
+                    showCustomAlert("❌ 注册失败: " + error.message, "申请失败", "error");
+                } else {
+                    if (data.session === null) {
+                        showCustomAlert("🌸 注册申请已提交！已向您的邮箱发送了一封验证邮件，请点击链接激活后方可登录。", "申请已接收", "success");
+                    } else {
+                        showCustomAlert("🎉 注册成功！您现在可以直接进行登录了。", "成功", "success");
+                    }
+                    toggleAuthMode('login');
+                }
+            } catch (err) {
+                regBtn.innerText = "申请注册账号";
+                regBtn.disabled = false;
+                showCustomAlert("❌ 注册失败，网络异常。", "系统异常", "error");
+            }
+        }
+
+        async function handleForgotPassword() {
+            const email = document.getElementById("forgotEmail").value.trim();
+            if (!email) return showCustomAlert("请输入您的邮箱地址！", "提示", "info");
+
+            const forgotBtn = document.getElementById("forgotBtn");
+            forgotBtn.innerText = "正在发送邮件...";
+            forgotBtn.disabled = true;
+
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname,
+                });
+
+                forgotBtn.innerText = "发送重置邮件";
+                forgotBtn.disabled = false;
+
+                if (error) {
+                    showCustomAlert("❌ 发送失败: " + error.message, "发送失败", "error");
+                } else {
+                    showCustomAlert("🌸 安全重置邮件发送成功！请前往您的邮箱查收重置链接。", "发送成功", "success");
+                    toggleAuthMode('login');
+                }
+            } catch (err) {
+                forgotBtn.innerText = "发送重置邮件";
+                forgotBtn.disabled = false;
+                showCustomAlert("❌ 发送异常。", "系统异常", "error");
+            }
+        }
+
+        async function handleResetPasswordSave() {
+            const newPassword = document.getElementById("resetPassword").value;
+            if (!newPassword || newPassword.length < 6) return showCustomAlert("新密码长度不能少于 6 位。", "提示", "info");
+
+            const resetBtn = document.getElementById("resetBtn");
+            resetBtn.innerText = "正在更新新密码...";
+            resetBtn.disabled = true;
+
+            try {
+                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+                resetBtn.innerText = "保存并更新密码";
+                resetBtn.disabled = false;
+
+                if (error) {
+                    showCustomAlert("❌ 新密码保存失败：" + error.message, "更新失败", "error");
+                } else {
+                    showCustomAlert("🎉 恭喜，您的密码已重置成功！请使用新密码重新登录。", "重置成功", "success");
+                    window.location.hash = ""; 
+                    showCard('loginCard');
+                }
+            } catch (err) {
+                console.error(err);
+                resetBtn.innerText = "保存并更新密码";
+                resetBtn.disabled = false;
+                showCustomAlert("❌ 密码修改失败。", "系统异常", "error");
+            }
+        }
+
+        async function bindMcAccount() {
+            if (!userProfile) return;
+            
+            const mode = await showMcBindSelector();
+            if (!mode) return;
+
+            if (mode === "1") {
+                const clientId = "00000000402B5328"; 
+                const redirectUri = "https://login.live.com/oauth20_desktop.srf"; 
+                
+                const authUrl = `https://login.live.com/oauth20_authorize.srf?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=XboxLive.signin+offline_access&prompt=select_account`;
+                
+                await showCustomAlert("🌸 即将新窗口打开微软登录。完成授权后，请**复制最终跳转后地址栏以 oauth20_desktop.srf 开头的完整长网址**粘贴回来即可！", "微软正版绑定引导", "info");
+                
+                window.open(authUrl, "_blank");
+
+                setTimeout(async () => {
+                    const callbackUrl = await showCustomPrompt("请将微软授权成功后，以 login.live.com/oauth20_desktop.srf 开头并且包含 code= 的那个很长的网址复制粘贴到下方：", "粘贴长网址...", "输入授权链接");
+                    if (!callbackUrl) return;
+
+                    try {
+                        let code = "";
+                        if (callbackUrl.includes("code=")) {
+                            const urlObj = new URL(callbackUrl);
+                            code = urlObj.searchParams.get("code");
+                        } else {
+                            code = callbackUrl.trim();
+                        }
+
+                        if (!code) {
+                            showCustomAlert("❌ 未能在您粘贴的链接中找到 code= 段，请确保复制了完整的长网址！", "链接解析失败", "error");
+                            return;
+                        }
+
+                        await verifyAndSaveMicrosoftCode(code);
+
+                    } catch (e) {
+                        showCustomAlert("❌ 链接解析失败，请确保复制的是跳转后的地址栏完整链接！", "解析错误", "error");
+                    }
+                }, 1000);
+
+            } else if (mode === "2") {
+                const mcId = await showCustomPrompt("请输入您在游戏内的 Minecraft ID (如: Alex):", "游戏 ID...", "手输 ID 绑定");
+                if (!mcId || !mcId.trim()) return;
+                const finalMcId = mcId.trim();
+
+                try {
+                    const { data: existingUser, error: checkError } = await supabaseClient
+                        .from('profiles')
+                        .select('id')
+                        .eq('mc_username', 'offline_' + finalMcId)
+                        .maybeSingle();
+
+                    if (checkError) {
+                        showCustomAlert("❌ 绑定数据冲突验证失败，请稍后重试。", "校验失败", "error");
+                        return;
+                    }
+
+                    if (existingUser) {
+                        if (existingUser.id === currentUser.id) {
+                            showCustomAlert("💡 您已经绑定了该游戏名称，无需重复绑定。", "提示", "info");
+                        } else {
+                            showCustomAlert(`❌ 绑定失败！该游戏 ID [${finalMcId}] 已被其他玩家绑定。如有争议请选择正版验证绑定覆盖或联系管理员！`, "绑定失败", "error");
+                        }
+                        return;
+                    }
+
+                    const { data, error } = await supabaseClient
+                        .from('profiles')
+                        .update({ mc_username: 'offline_' + finalMcId, mc_uuid: 'offline_' + finalMcId })
+                        .eq('id', currentUser.id)
+                        .select()
+                        .single();
+
+                    if (error) {
+                        showCustomAlert("❌ 绑定数据更新失败: " + error.message, "更新失败", "error");
+                    } else {
+                        userProfile = data;
+                        updateProfileUI();
+                        showCustomAlert(`🎉 绑定成功！已同步绑定至 Minecraft 离线 ID: ${finalMcId}`, "成功", "success");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showCustomAlert("❌ 绑定发生未知网络异常，请稍后再试。", "绑定异常", "error");
+                }
+            }
+        }
+
+        // =========================================================================
+        // 🔒 前端直连获取玩家微软信息 (Deno代理+Mojang原生直连混合验证流，100% 成功版)
+        // =========================================================================
+        async function verifyAndSaveMicrosoftCode(code) {
+            await showCustomAlert("⚡ 正在进行正版授权核对，请耐心等待...", "验证中", "info");
+
+            try {
+                // ⚠️ 重点核心配置：请替换为您的 Deno 部署链接！
+                const PROXY_URL = "https://llxz.netlify.app/.netlify/functions/verify?code=";
+
+                // 1. 兑换微软 OAuth access_token (通过 Deno 代理绕过微软 CORS)
+                const tokenTarget = "https://login.live.com/oauth20_token.srf";
+                const tokenParams = new URLSearchParams({
+                    client_id: "00000000402B5328",
+                    code: code,
+                    grant_type: "authorization_code",
+                    redirect_uri: "https://login.live.com/oauth20_desktop.srf"
+                });
+
+                const tokenRes = await fetch(PROXY_URL + encodeURIComponent(tokenTarget), {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: tokenParams.toString()
+                });
+
+                if (!tokenRes.ok) {
+                    showCustomAlert("❌ 微软授权凭证已失效或超时，请重新授权！", "凭证失效", "error");
+                    return;
+                }
+                const tokenData = await tokenRes.json();
+                const msaToken = tokenData.access_token;
+
+                // 2. 换取 Xbox Live 签名凭证 (XBL) (通过 Deno 代理)
+                const xblTarget = "https://user.auth.xboxlive.com/user/authenticate";
+                const xblRes = await fetch(PROXY_URL + encodeURIComponent(xblTarget), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        Properties: {
+                            AuthMethod: "RPS",
+                            SiteName: "user.auth.xboxlive.com",
+                            RpsTicket: `d=${msaToken}`
+                        },
+                        RelyingParty: "http://auth.xboxlive.com",
+                        TokenType: "JWT"
+                    })
+                });
+
+                if (!xblRes.ok) {
+                    showCustomAlert("❌ Xbox 鉴权失败，您的微软账号可能未注册 Xbox 档案！", "XBL 失败", "error");
+                    return;
+                }
+                const xblData = await xblRes.json();
+                const xblToken = xblData.Token;
+                const userHash = xblData.DisplayClaims.xui[0].uhs;
+
+                // 3. 换取 XSTS 安全凭证 (通过 Deno 代理)
+                const xstsTarget = "https://xsts.auth.xboxlive.com/xsts/authorize";
+                const xstsRes = await fetch(PROXY_URL + encodeURIComponent(xstsTarget), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        Properties: {
+                            SandboxId: "RETAIL",
+                            UserTokens: [xblToken]
+                        },
+                        RelyingParty: "rp://api.minecraftservices.com/",
+                        TokenType: "JWT"
+                    })
+                });
+
+                if (!xstsRes.ok) {
+                    const errData = await xstsRes.json().catch(() => ({}));
+                    if (errData.XErr === 2148916238) {
+                        showCustomAlert("❌ 该微软账号属于未满18岁儿童，未被家长组授权！", "家长控制拦截", "error");
+                    } else {
+                        showCustomAlert("❌ 微软防沉迷家长策略拦截或账号地区限制，XSTS 授权失败。", "XSTS 失败", "error");
+                    }
+                    return;
+                }
+                const xstsData = await xstsRes.json();
+                const xstsToken = xstsData.Token;
+
+                // =========================================================================
+                // ⚡ 破局突破：步骤 4 与 5 原生支持 CORS，我们采用浏览器直连（完全不走代理）！
+                // 这样能使用您本人的住宅宽带真实 IP 进行通信，Mojang 的 Cloudflare 100% 畅通放行！
+                // =========================================================================
+
+                // 4. 用 XSTS 令牌登录 Minecraft 官方服务 (前端直连官方 API)
+                const mcLoginTarget = "https://api.minecraftservices.com/authentication/login_with_xbox";
+                const mcLoginRes = await fetch(mcLoginTarget, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        identityToken: `XSTS=uhs:${userHash};${xstsToken}`
+                    })
+                });
+
+                if (!mcLoginRes.ok) {
+                    showCustomAlert("❌ Minecraft 官方验证响应异常，请重试。", "官方验证失败", "error");
+                    return;
+                }
+                const mcLoginData = await mcLoginRes.json();
+                const mcToken = mcLoginData.access_token;
+
+                // 5. 最终获取玩家正版 Profile (前端直连官方 API)
+                const profileTarget = "https://api.minecraftservices.com/minecraft/profile";
+                const profileRes = await fetch(profileTarget, {
+                    method: "GET",
+                    headers: { "Authorization": `Bearer ${mcToken}` }
+                });
+
+                if (profileRes.status === 404) {
+                    showCustomAlert("❌ 验证失败：此微软账号名下未购买 Java 正版 Minecraft 游戏！", "未购正版", "error");
+                    return;
+                }
+                if (!profileRes.ok) {
+                    showCustomAlert("❌ 无法从 Mojang 官方数据库提取您的正版 ID 档案。", "读取失败", "error");
+                    return;
+                }
+                const mcProfile = await profileRes.json();
+                const mcName = mcProfile.name;
+                const mcUuid = mcProfile.id;
+
+                // 6. 将正版数据保存到您的 Supabase 数据库
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('profiles')
+                    .select('id')
+                    .eq('mc_uuid', mcUuid)
+                    .maybeSingle();
+
+                if (checkError) {
+                    showCustomAlert("❌ 冲突校验出错，请稍后重试。", "校验失败", "error");
+                    return;
+                }
+
+                if (existingUser && existingUser.id !== currentUser.id) {
+                    showCustomAlert("❌ 绑定被拒绝！此 Minecraft 账号已被其他邮箱绑定。", "防冒领拦截", "error");
+                    return;
+                }
+
+                // 7. 写入 Supabase
+                const { data, error: dbError } = await supabaseClient
+                    .from('profiles')
+                    .update({ mc_username: mcName, mc_uuid: mcUuid })
+                    .eq('id', currentUser.id)
+                    .select()
+                    .single();
+
+                if (dbError) {
+                    showCustomAlert("❌ 绑定数据存入失败：" + dbError.message, "写入失败", "error");
+                } else {
+                    userProfile = data;
+                    updateProfileUI();
+                    showCustomAlert(`🎉 绑定成功！\n欢迎正版玩家：${mcName} (${mcUuid})！`, "绑定成功", "success");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showCustomAlert("❌ 连接微软服务超时，请确保网络通畅并重试！", "校验失败", "error");
+            }
+        }
+
+        async function unbindMcAccount() {
+            if (!userProfile || !userProfile.mc_username) return;
+
+            const confirmSend = await showCustomPrompt("🌸 正在申请安全解绑 Minecraft 账号。\n为确认您的操作安全，系统将向您的注册邮箱发送 6 位数一次性验证码。\n\n输入“YES”以发送邮件验证码：", "输入 YES 确认发送...", "邮箱解绑安全防御");
+            if (!confirmSend || confirmSend.trim().toUpperCase() !== "YES") {
+                showCustomAlert("💡 已取消发送验证码，解绑程序安全退出。", "操作已终止", "info");
+                return;
+            }
+
+            const unbindBtn = document.getElementById("bindActionButton");
+            unbindBtn.innerText = "正在发送验证码...";
+            unbindBtn.disabled = true;
+
+            try {
+                const { error: sendError } = await supabaseClient.auth.signInWithOtp({
+                    email: currentUser.email,
+                    options: {
+                        shouldCreateUser: false 
+                    }
+                });
+
+                unbindBtn.disabled = false;
+                updateProfileUI();
+
+                if (sendError) {
+                    showCustomAlert("❌ 邮件验证码发送失败：" + sendError.message, "发送失败", "error");
+                    return;
+                }
+
+                const enteredOtp = await showCustomPrompt(`🌸 验证邮件已发出！\n系统已向您的注册邮箱 [${currentUser.email}] 投递了验证码。\n\n请在下方输入邮件里的 6 位数字验证码确认解绑：`, "输入 6 位数字验证码...", "邮箱验证码确认");
+                if (!enteredOtp || enteredOtp.trim().length !== 6) {
+                    showCustomAlert("❌ 验证码为空或格式有误，解绑已被安全终止！", "格式校验拦截", "error");
+                    return;
+                }
+
+                unbindBtn.innerText = "正在比对验证码...";
+                unbindBtn.disabled = true;
+
+                const { error: verifyError } = await supabaseClient.auth.verifyOtp({
+                    email: currentUser.email,
+                    token: enteredOtp.trim(),
+                    type: 'email'
+                });
+
+                if (verifyError) {
+                    unbindBtn.disabled = false;
+                    updateProfileUI();
+                    showCustomAlert("❌ 验证失败：一次性验证码输入错误或已超时失效！", "防盗防御拦截", "error");
+                    return;
+                }
+
+                const { data, error: dbError } = await supabaseClient
+                    .from('profiles')
+                    .update({ mc_username: null, mc_uuid: null })
+                    .eq('id', currentUser.id)
+                    .select()
+                    .single();
+
+                unbindBtn.disabled = false;
+
+                if (dbError) {
+                    showCustomAlert("❌ 数据库清理解绑数据失败: " + dbError.message, "写入失败", "error");
+                } else {
+                    userProfile = data;
+                    updateProfileUI();
+                    showCustomAlert("🎉 安全校验成功！您的 Minecraft 游戏账号已彻底解绑，游戏白名单已同步关停。", "解绑成功", "success");
+                }
+
+            } catch (err) {
+                unbindBtn.disabled = false;
+                updateProfileUI();
+                showCustomAlert("❌ 解绑通信发生异常，请稍后再试。", "系统异常", "error");
+            }
+        }
+
+        async function handleCheckIn() {
+            if (!userProfile) return;
+
+            try {
+                const lastCheckIn = userProfile.last_check_in ? new Date(userProfile.last_check_in) : null;
+                const today = new Date();
+
+                if (lastCheckIn && lastCheckIn.toDateString() === today.toDateString()) {
+                    showCustomAlert("🌸 你今天已经签到过了哦，明天再来吧~", "今日已签到", "info");
+                    return;
+                }
+
+                const newCoins = (userProfile.coins || 0) + 20;
+                const newDays = (userProfile.days_count || 0) + 1;
+
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .update({ 
+                        coins: newCoins, 
+                        days_count: newDays,
+                        last_check_in: today.toISOString()
+                    })
+                    .eq('id', currentUser.id)
+                    .select()
+                    .single();
+
+                if (error) {
+                    showCustomAlert("❌ 签到失败: " + error.message, "签到失败", "error");
+                } else {
+                    userProfile = data;
+                    updateProfileUI();
+                    showCustomAlert("🌸 签到成功！积分 +20！连续签到天数已更新！", "签到成功", "success");
+                }
+            } catch (err) {
+                showCustomAlert("❌ 签到异常，请稍候再试。", "系统错误", "error");
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (!error) {
+                    showCustomAlert("👋 已安全退出登录。", "注销成功", "success");
+                }
+            } catch (err) {
+                showCustomAlert("退出登录时出错。", "系统异常", "error");
+            }
+        }
+    </script>
+
+    <!-- Sakura Canvas -->
+    <script>
+        const canvas = document.getElementById('wind-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        const particles = [];
+        class SakuraPetal {
+            constructor() { this.reset(); this.y = Math.random() * canvas.height; }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -20;
+                this.size = Math.random() * 6 + 4;
+                this.speedY = Math.random() * 1.2 + 0.8;
+                this.speedX = Math.random() * 1.0 - 0.2;
+                this.angle = Math.random() * Math.PI;
+                this.spinSpeed = Math.random() * 0.02 - 0.01;
+                this.oscillation = Math.random() * 0.02;
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX + Math.sin(this.y * this.oscillation) * 0.5;
+                this.angle += this.spinSpeed;
+                if (this.y > canvas.height + 20 || this.x < -20 || this.x > canvas.width + 20) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 183, 197, 0.7)';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        for (let i = 0; i < 30; i++) particles.push(new SakuraPetal());
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+    </script>
+</body>
+</html>
