@@ -211,7 +211,7 @@
             font-weight: bold;
         }
 
-        /* ================= 极清玩家后台布局 ================= */
+        /* ================= 个人中心面板 ================= */
         .profile-card {
             width: 100%;
             display: none;
@@ -905,7 +905,7 @@
             <button class="btn-action" id="resetBtn" onclick="handleResetPasswordSave()">保存并更新密码</button>
         </div>
 
-        <!-- ================= 个人中心面板 (双栏布局) ================= -->
+        <!-- ================= 个人中心面板 ================= -->
         <div class="profile-card" id="profileCard">
             
             <!-- Left Column -->
@@ -1414,6 +1414,44 @@
             }
         }
 
+        // =========================================================================
+        // 🔒 密码学高阶 PKCE 加密算法生成辅助（解决 Invalid app registration 拦截核心）
+        // =========================================================================
+        function dec2hex(dec) {
+            return ('0' + dec.toString(16)).substr(-2);
+        }
+
+        function generateCodeVerifier() {
+            var array = new Uint32Array(56/2);
+            window.crypto.getRandomValues(array);
+            return Array.from(array, dec2hex).join('');
+        }
+
+        function sha256(plain) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(plain);
+            return window.crypto.subtle.digest('SHA-256', data);
+        }
+
+        function base64urlencode(a) {
+            var str = "";
+            var bytes = new Uint8Array(a);
+            var len = bytes.byteLength;
+            for (var i = 0; i < len; i++) {
+                str += String.fromCharCode(bytes[i]);
+            }
+            return btoa(str)
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_")
+                .replace(/=/g, "");
+        }
+
+        async function generateCodeChallengeFromVerifier(v) {
+            var hashed = await sha256(v);
+            var base64encoded = base64urlencode(hashed);
+            return base64encoded;
+        }
+
         async function handleLogin() {
             if (loginFailCount >= 5) {
                 showCustomAlert("❌ 尝试过多！登录入口已被锁定。请1分钟后再试。", "安全锁", "error");
@@ -1582,7 +1620,12 @@
                 const clientId = "00000000402B5328"; 
                 const redirectUri = "https://login.live.com/oauth20_desktop.srf"; 
                 
-                const authUrl = `https://login.live.com/oauth20_authorize.srf?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=XboxLive.signin+offline_access&prompt=select_account`;
+                // ⚡ 安全防护：加密生成验证密匙对
+                const verifier = generateCodeVerifier();
+                sessionStorage.setItem("mc_pkce_verifier", verifier);
+                const challenge = await generateCodeChallengeFromVerifier(verifier);
+
+                const authUrl = `https://login.live.com/oauth20_authorize.srf?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=XboxLive.signin+offline_access&prompt=select_account&code_challenge=${challenge}&code_challenge_method=S256`;
                 
                 await showCustomAlert("🌸 即将新窗口打开微软登录。完成授权后，请**复制最终跳转后地址栏以 oauth20_desktop.srf 开头的完整长网址**粘贴回来即可！", "微软正版绑定引导", "info");
                 
@@ -1667,8 +1710,12 @@
             await showCustomAlert("⚡ 正在请求 Netlify 官方云端验证，请耐心等待...", "验证中", "info");
 
             try {
-                // 将真实的 code 作为参数传递给您已部署好的 Netlify 云端函数
-                const response = await fetch(`https://llxz.netlify.app/.netlify/functions/verify?code=${encodeURIComponent(code)}`, {
+                // 取出本地保存的验证秘钥子
+                const verifier = sessionStorage.getItem("mc_pkce_verifier") || "";
+                sessionStorage.removeItem("mc_pkce_verifier"); // 安全清理
+
+                // 将 code 和 verifier 同时传送给您的 Netlify 云函数
+                const response = await fetch(`https://llxz.netlify.app/.netlify/functions/verify?code=${encodeURIComponent(code)}&code_verifier=${encodeURIComponent(verifier)}`, {
                     method: "POST"
                 });
                 
@@ -1680,10 +1727,10 @@
                     return;
                 }
 
-                const mcName = result.username; // Mojang 返回的正版 ID
-                const mcUuid = result.uuid;     // Mojang 返回的正版 UUID
+                const mcName = result.username; 
+                const mcUuid = result.uuid;     
 
-                // 唯一性硬校验
+                // 唯一性校验
                 const { data: existingUser, error: checkError } = await supabaseClient
                     .from('profiles')
                     .select('id')
@@ -1700,7 +1747,7 @@
                     return;
                 }
 
-                // 数据保存写入 Supabase
+                // 数据写入 Supabase
                 const { data, error: dbError } = await supabaseClient
                     .from('profiles')
                     .update({ mc_username: mcName, mc_uuid: mcUuid })
